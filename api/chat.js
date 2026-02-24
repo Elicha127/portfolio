@@ -84,6 +84,7 @@ DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/
     });
 
     if (!response.ok) {
+     // Remplace 2.0 par 1.5 dans ton URL
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
       console.error('Gemini error details:', err);
       return res.status(response.status).json({ error: 'API error', detail: err });
