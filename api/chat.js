@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  // Configuration CORS
+  // Config CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   const { message } = req.body;
   if (!message) return res.status(400).json({ error: 'Missing message' });
 
-  // VOTRE CONTEXTE COMPLET (conservé intégralement)
+  // Ton contexte de profil (gardé intact)
   const PROFILE_CONTEXT = `Tu es l'assistant IA personnel de Yaovi Elicha AGBODOH, administrateur systèmes et réseaux basé à Lomé, Togo. Réponds UNIQUEMENT en rapport avec son profil. Sois précis, chaleureux et professionnel. Réponds en français sauf si la question est posée en anglais. Si on te demande qui tu es, dis que tu es l'assistant IA du portfolio d'Elicha.
 
 PROFIL: Yaovi Elicha AGBODOH
@@ -61,73 +61,50 @@ RÉFÉRENCE: M. WADJA — 90 35 65 22 — IAI-TOGO
 DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/cybersécurité/automatisation`;
 
   try {
-    const apiKey = process.env.DEEPSEEK_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     
-    // Vérification de la clé API (version améliorée)
     if (!apiKey) {
-      console.error("❌ ERREUR: DEEPSEEK_API_KEY manquante dans l'environnement Vercel");
-      return res.status(500).json({ 
-        error: 'Configuration error', 
-        details: 'API key is missing' 
-      });
+      console.error("ERREUR : GEMINI_API_KEY manquante");
+      return res.status(500).json({ error: 'Configuration error: API Key missing' });
     }
 
-    console.log("✅ Clé DeepSeek détectée, début: " + apiKey.substring(0, 5) + "...");
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    const response = await fetch(url, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'deepseek-chat', // ou 'deepseek-reasoner' pour plus de réflexion
-        messages: [
-          {
-            role: 'system',
-            content: PROFILE_CONTEXT  // Votre contexte complet ici
-          },
-          {
-            role: 'user',
-            content: message
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-        top_p: 0.95,
-        frequency_penalty: 0,
-        presence_penalty: 0
+        // Instruction système pour définir la personnalité d'Elicha
+        system_instruction: {
+          parts: [{ text: PROFILE_CONTEXT }]
+        },
+        contents: [{
+          parts: [{ text: message }]
+        }],
+        generationConfig: {
+          maxOutputTokens: 800,
+          temperature: 0.7
+        }
       })
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ DeepSeek API error (${response.status}):`, errorText);
-      return res.status(response.status).json({ 
-        error: 'DeepSeek API error', 
-        status: response.status,
-        details: errorText 
-      });
+      console.error('Gemini API Error:', data);
+      return res.status(response.status).json({ error: 'API error', detail: data });
     }
 
-    const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content;
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (!reply) {
-      console.error('❌ Empty response from DeepSeek:', data);
-      return res.status(500).json({ error: 'Empty response from DeepSeek' });
+      return res.status(500).json({ error: 'Empty response from Gemini' });
     }
 
-    // Log de succès (optionnel)
-    console.log('✅ Réponse générée avec succès');
-
-    res.status(200).json({ reply });
+    return res.status(200).json({ reply });
 
   } catch (error) {
-    console.error('❌ Server error:', error);
-    res.status(500).json({ 
-      error: 'Server error', 
-      message: error.message 
-    });
+    console.error('Server error:', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
