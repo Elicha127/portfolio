@@ -74,16 +74,16 @@ DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        // Instruction système pour définir la personnalité d'Elicha
-        system_instruction: {
+        system_instruction: { // Doit être au singulier et avec underscore
           parts: [{ text: PROFILE_CONTEXT }]
         },
         contents: [{
+          role: "user", // Optionnel mais recommandé
           parts: [{ text: message }]
         }],
         generationConfig: {
-          maxOutputTokens: 800,
-          temperature: 0.7
+          temperature: 0.7,
+          maxOutputTokens: 800
         }
       })
     });
