@@ -38,9 +38,38 @@
 
   /* HERO */
   #hero { min-height:100vh; display:flex; align-items:center; padding:8rem 4rem 4rem; position:relative; overflow:hidden; }
-  .hero-bg-circle { position:absolute; width:700px; height:700px; border-radius:50%; background:radial-gradient(circle,rgba(0,212,255,0.05) 0%,transparent 70%); top:50%; left:62%; transform:translate(-50%,-50%); animation:pulse 4s ease-in-out infinite; }
+  .hero-bg-circle { position:absolute; width:700px; height:700px; border-radius:50%; background:radial-gradient(circle,rgba(0,212,255,0.05) 0%,transparent 70%); top:50%; left:50%; transform:translate(-50%,-50%); animation:pulse 4s ease-in-out infinite; }
   @keyframes pulse { 0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.6} 50%{transform:translate(-50%,-50%) scale(1.1);opacity:1} }
-  .hero-content { max-width:720px; position:relative; z-index:1; }
+  .hero-inner { display:grid; grid-template-columns:1fr auto; gap:5rem; align-items:center; width:100%; position:relative; z-index:1; }
+  .hero-content { max-width:620px; }
+
+  /* PHOTO SLIDER */
+  .photo-slider { position:relative; width:280px; height:360px; flex-shrink:0; margin-bottom:30px; }
+  .photo-slider::before { content:''; position:absolute; inset:-2px; z-index:0; border-radius:2px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2),var(--accent3));
+    animation:borderAnim 3s linear infinite; }
+  @keyframes borderAnim {
+    0%{filter:hue-rotate(0deg)} 100%{filter:hue-rotate(360deg)} }
+  .photo-frame { position:relative; z-index:1; width:100%; height:100%; background:var(--surface); overflow:hidden; }
+  .photo-slide { position:absolute; inset:0; opacity:0; transition:opacity 0.9s ease, transform 0.9s ease; transform:scale(1.04); }
+  .photo-slide.active { opacity:1; transform:scale(1); }
+  .photo-slide img { width:100%; height:100%; object-fit:cover; object-position:center top; display:block; }
+  .photo-placeholder { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.8rem; background:var(--surface2); color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.68rem; letter-spacing:0.1em; text-align:center; padding:1.5rem; }
+  .ph-icon { font-size:3.5rem; opacity:0.25; display:block; }
+  .ph-label { color:var(--accent); opacity:0.5; }
+  .photo-frame::after { content:''; position:absolute; bottom:0; left:0; right:0; height:80px; background:linear-gradient(to top,rgba(10,14,23,0.65),transparent); z-index:2; pointer-events:none; }
+  .photo-dots { position:absolute; bottom:-26px; left:50%; transform:translateX(-50%); display:flex; gap:8px; z-index:3; }
+  .photo-dot { width:6px; height:6px; border-radius:50%; background:var(--text-dim); cursor:pointer; transition:background 0.3s,transform 0.3s; border:none; padding:0; }
+  .photo-dot.active { background:var(--accent); transform:scale(1.5); }
+  .photo-counter { position:absolute; top:10px; right:10px; font-family:'JetBrains Mono',monospace; font-size:0.62rem; color:var(--accent); background:rgba(10,14,23,0.75); padding:0.18rem 0.5rem; z-index:3; border:1px solid var(--border); letter-spacing:0.08em; }
+  .photo-caption { position:absolute; bottom:8px; left:12px; font-family:'JetBrains Mono',monospace; font-size:0.6rem; color:var(--accent2); z-index:3; letter-spacing:0.08em; text-transform:uppercase; opacity:0; transform:translateY(5px); transition:opacity 0.4s,transform 0.4s; }
+  .photo-slide.active .photo-caption { opacity:1; transform:translateY(0); }
+
+  @media(max-width:960px) {
+    .hero-inner { grid-template-columns:1fr; gap:3rem; justify-items:center; }
+    .hero-content { max-width:100%; }
+    .photo-slider { width:220px; height:280px; }
+  }
   .hero-tag { font-family:'JetBrains Mono',monospace; font-size:0.8rem; color:var(--accent2); letter-spacing:0.2em; text-transform:uppercase; margin-bottom:1.5rem; display:flex; align-items:center; gap:0.8rem; }
   .hero-tag::before { content:''; display:inline-block; width:40px; height:1px; background:var(--accent2); }
   h1.hero-name { font-size:clamp(3rem,7vw,6rem); font-weight:800; line-height:1.05; letter-spacing:-0.02em; margin-bottom:0.5rem; }
@@ -208,27 +237,79 @@
 <!-- HERO -->
 <section id="hero">
   <div class="hero-bg-circle"></div>
-  <div class="hero-content">
-    <p class="hero-tag">Basé à Lomé, Togo 🇹🇬</p>
-    <h1 class="hero-name">
-      <span class="first">Yaovi Elicha</span>
-      <span class="last">AGBODOH</span>
-    </h1>
-    <p class="hero-title">
-      <span id="typewriter"></span><span class="blink"></span>
-    </p>
-    <p class="hero-desc">
-      Administrateur systèmes et réseaux passionné par la cybersécurité, l'automatisation IaC et les architectures cloud-native ZeroTrust. Je conçois des infrastructures résilientes et sécurisées.
-    </p>
-    <div class="hero-ctas">
-      <a href="#experience" class="btn-primary">Mon parcours</a>
-      <a href="#contact" class="btn-ghost">Me contacter</a>
+  <div class="hero-inner">
+
+    <!-- TEXTE GAUCHE -->
+    <div class="hero-content">
+      <p class="hero-tag">Basé à Lomé, Togo 🇹🇬</p>
+      <h1 class="hero-name">
+        <span class="first">Yaovi Elicha</span>
+        <span class="last">AGBODOH</span>
+      </h1>
+      <p class="hero-title">
+        <span id="typewriter"></span><span class="blink"></span>
+      </p>
+      <p class="hero-desc">
+        Administrateur systèmes et réseaux passionné par la cybersécurité, l'automatisation IaC et les architectures cloud-native ZeroTrust. Je conçois des infrastructures résilientes et sécurisées.
+      </p>
+      <div class="hero-ctas">
+        <a href="#experience" class="btn-primary">Mon parcours</a>
+        <a href="#contact" class="btn-ghost">Me contacter</a>
+      </div>
+      <div class="hero-stats">
+        <div><div class="stat-num" data-count="3">0</div><div class="stat-label">Stages réalisés</div></div>
+        <div><div class="stat-num" data-count="3">0</div><div class="stat-label">Certifs Cisco</div></div>
+        <div><div class="stat-num" data-count="7">0</div><div class="stat-label">Projets livrés</div></div>
+      </div>
     </div>
-    <div class="hero-stats">
-      <div><div class="stat-num" data-count="3">0</div><div class="stat-label">Stages réalisés</div></div>
-      <div><div class="stat-num" data-count="3">0</div><div class="stat-label">Certifs Cisco</div></div>
-      <div><div class="stat-num" data-count="7">0</div><div class="stat-label">Projets livrés</div></div>
+
+    <!-- PHOTO SLIDER DROITE -->
+    <!-- 📁 Place tes 3 photos dans : public/images/photo1.jpg  photo2.jpg  photo3.jpg -->
+    <div class="photo-slider">
+      <div class="photo-frame">
+
+        <div class="photo-slide active" id="slide-0">
+          <img src="images/photo1.jpg" alt="Elicha AGBODOH - Photo 1"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="photo-placeholder" style="display:none">
+            <span class="ph-icon">🧑‍💻</span>
+            <span class="ph-label">photo1.jpg</span>
+            <span>Remplace par ta photo</span>
+          </div>
+          <span class="photo-caption">Yaovi Elicha · Sysadmin</span>
+        </div>
+
+        <div class="photo-slide" id="slide-1">
+          <img src="images/photo2.jpg" alt="Elicha AGBODOH - Photo 2"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="photo-placeholder" style="display:none">
+            <span class="ph-icon">🖥️</span>
+            <span class="ph-label">photo2.jpg</span>
+            <span>Remplace par ta photo</span>
+          </div>
+          <span class="photo-caption">IAI-TOGO · 2025</span>
+        </div>
+
+        <div class="photo-slide" id="slide-2">
+          <img src="images/photo3.jpg" alt="Elicha AGBODOH - Photo 3"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="photo-placeholder" style="display:none">
+            <span class="ph-icon">🔐</span>
+            <span class="ph-label">photo3.jpg</span>
+            <span>Remplace par ta photo</span>
+          </div>
+          <span class="photo-caption">CCNA 3 · Certified 🏆</span>
+        </div>
+
+        <div class="photo-counter"><span id="slide-current">1</span> / 3</div>
+      </div>
+      <div class="photo-dots">
+        <button class="photo-dot active" data-idx="0"></button>
+        <button class="photo-dot" data-idx="1"></button>
+        <button class="photo-dot" data-idx="2"></button>
+      </div>
     </div>
+
   </div>
 </section>
 
@@ -240,7 +321,7 @@
   </div>
   <div class="about-grid">
     <div class="about-text reveal">
-      <p>Je suis <strong>Yaovi Elicha AGBODOH</strong>, étudiant en fin de licence en Administration des Systèmes et Réseaux à l'<strong>IAI-TOGO</strong>, avec une double formation en psychologie du travail et des organisations à la FSHS de Lomé.</p>
+      <p>Je suis <strong>Yaovi Elicha AGBODOH</strong>, Titulaire d'une licence en Administration des Systèmes et Réseaux à l'<strong>IAI-TOGO</strong>, avec une double formation en psychologie du travail et des organisations à la FSHS de Lomé.</p>
       <p>Mon profil conjugue expertise technique profonde et compréhension des enjeux humains en entreprise. Passionné par la <strong>cybersécurité Zero-Trust</strong>, l'<strong>automatisation IaC</strong> et le monitoring <strong>cloud-native</strong>.</p>
       <p>Mes trois stages m'ont permis de déployer des environnements production réels : serveur mail complet sous Windows Server, et une infrastructure réseau ZeroTrust entièrement automatisée avec Ansible, Prometheus, pfSense et bien d'autres technologies.</p>
     </div>
@@ -548,6 +629,47 @@ async function sendMessage(){
     addMsg('Désolé, une erreur est survenue. Veuillez réessayer.','bot');
   }
 }
+
+// ===== PHOTO SLIDER =====
+(function(){
+  const slides = document.querySelectorAll('.photo-slide');
+  const dots   = document.querySelectorAll('.photo-dot');
+  const counter = document.getElementById('slide-current');
+  let current = 0;
+  let timer;
+
+  function goTo(idx) {
+    slides[current].classList.remove('active');
+    dots[current].classList.remove('active');
+    current = idx;
+    slides[current].classList.add('active');
+    dots[current].classList.add('active');
+    if(counter) counter.textContent = current + 1;
+  }
+
+  function next() { goTo((current + 1) % slides.length); }
+
+  // Auto-avance toutes les 4 secondes
+  function startTimer() { timer = setInterval(next, 4000); }
+  function resetTimer()  { clearInterval(timer); startTimer(); }
+
+  startTimer();
+
+  // Clic sur les dots
+  dots.forEach(dot => {
+    dot.addEventListener('click', () => {
+      goTo(parseInt(dot.dataset.idx));
+      resetTimer();
+    });
+  });
+
+  // Pause au survol
+  const slider = document.querySelector('.photo-slider');
+  if(slider) {
+    slider.addEventListener('mouseenter', () => clearInterval(timer));
+    slider.addEventListener('mouseleave', startTimer);
+  }
+})();
 
 aiSend.addEventListener('click',sendMessage);
 aiInput.addEventListener('keypress',e=>{if(e.key==='Enter')sendMessage();});

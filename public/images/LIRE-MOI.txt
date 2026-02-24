@@ -1,0 +1,19 @@
+# 📸 Dossier images/
+
+Place ici tes 3 photos avec exactement ces noms :
+
+  photo1.jpg   ← Photo principale (ex: portrait professionnel)
+  photo2.jpg   ← Photo 2 (ex: en formation / à l'IAI)
+  photo3.jpg   ← Photo 3 (ex: avec ton badge CCNA ou en stage)
+
+## Conseils :
+- Format recommandé : JPG ou WebP
+- Taille idéale : 400x500 px minimum (portrait, ratio 3:4)
+- Poids max conseillé : 300 Ko par photo (pour le chargement rapide)
+- Tu peux aussi utiliser .png, il suffit de changer l'extension dans index.html
+
+## Pour changer les captions (texte qui apparaît sur chaque photo) :
+Cherche dans index.html :
+  <span class="photo-caption">Yaovi Elicha · Sysadmin</span>   ← photo1
+  <span class="photo-caption">IAI-TOGO · 2025</span>           ← photo2
+  <span class="photo-caption">CCNA 3 · Certified 🏆</span>     ← photo3
