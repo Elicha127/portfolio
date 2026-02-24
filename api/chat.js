@@ -62,14 +62,15 @@ DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/
     const apiKey = process.env.GEMINI_API_KEY;
     
     // Correction de l'URL avec le modèle 1.5-flash
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+   // 1. Utilisez impérativement v1beta pour avoir accès aux instructions système
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        // Changement ici : systemInstruction au lieu de system_instruction
-        systemInstruction: {
+        // 2. Utilisez system_instruction (SNAKE_CASE) pour le format REST
+        system_instruction: {
           parts: [{ text: PROFILE_CONTEXT }]
         },
         contents: [{
