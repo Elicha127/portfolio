@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // Config CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -10,7 +9,6 @@ export default async function handler(req, res) {
   const { message } = req.body;
   if (!message) return res.status(400).json({ error: 'Missing message' });
 
-  // Ton contexte de profil (gardé intact)
   const PROFILE_CONTEXT = `Tu es l'assistant IA personnel de Yaovi Elicha AGBODOH, administrateur systèmes et réseaux basé à Lomé, Togo. Réponds UNIQUEMENT en rapport avec son profil. Sois précis, chaleureux et professionnel. Réponds en français sauf si la question est posée en anglais. Si on te demande qui tu es, dis que tu es l'assistant IA du portfolio d'Elicha.
 
 PROFIL: Yaovi Elicha AGBODOH
@@ -60,51 +58,55 @@ INTÉRÊTS: Lecture, Prédication, Jeu d'échecs, Communication, Art oratoire, V
 RÉFÉRENCE: M. WADJA — 90 35 65 22 — IAI-TOGO
 DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/cybersécurité/automatisation`;
 
-  try {
+ try {
     const apiKey = process.env.GEMINI_API_KEY;
     
-    if (!apiKey) {
-      console.error("ERREUR : GEMINI_API_KEY manquante");
-      return res.status(500).json({ error: 'Configuration error: API Key missing' });
-    }
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Correction de l'URL avec le modèle 1.5-flash
+   // 1. Utilisez impérativement v1beta pour avoir accès aux instructions système
+   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        system_instruction: { // Doit être au singulier et avec underscore
+        // 2. Utilisez system_instruction (SNAKE_CASE) pour le format REST
+        system_instruction: {
           parts: [{ text: PROFILE_CONTEXT }]
         },
         contents: [{
-          role: "user", // Optionnel mais recommandé
           parts: [{ text: message }]
         }],
         generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 800
+          maxOutputTokens: 600,
+          temperature: 0.7
         }
       })
     });
 
-    const data = await response.json();
-
     if (!response.ok) {
-      console.error('Gemini API Error:', data);
-      return res.status(response.status).json({ error: 'API error', detail: data });
+     // Remplace 2.0 par 1.5 dans ton URL
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      console.error('Gemini error details:', err);
+      return res.status(response.status).json({ error: 'API error', detail: err });
     }
 
+    const data = await response.json();
     const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
     
-    if (!reply) {
-      return res.status(500).json({ error: 'Empty response from Gemini' });
-    }
+    if (!reply) return res.status(500).json({ error: 'Empty response from Gemini' });
 
-    return res.status(200).json({ reply });
+    res.status(200).json({ reply });
 
-  } catch (error) {
+} catch (error) {
     console.error('Server error:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
-  }
+    res.status(500).json({ error: 'Server error' });
+}
+
+const apiKey = process.env.GEMINI_API_KEY;
+
+if (!apiKey) {
+  console.error("ERREUR : La variable GEMINI_API_KEY est introuvable dans l'environnement Vercel");
+} else {
+  console.log("Clé détectée, début de chaîne :", apiKey.substring(0, 5));
+}
 }
