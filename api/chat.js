@@ -58,9 +58,11 @@ INTÉRÊTS: Lecture, Prédication, Jeu d'échecs, Communication, Art oratoire, V
 RÉFÉRENCE: M. WADJA — 90 35 65 22 — IAI-TOGO
 DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/cybersécurité/automatisation`;
 
-  try {
+ try {
     const apiKey = process.env.GEMINI_API_KEY;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+    
+    // Correction de l'URL avec le modèle 1.5-flash
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: 'POST',
@@ -80,18 +82,20 @@ DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/
     });
 
     if (!response.ok) {
-      const err = await response.text();
-      console.error('Gemini error:', err);
-      return res.status(500).json({ error: 'API error', detail: err });
+      const err = await response.json(); // On parse en JSON pour mieux voir l'erreur Google
+      console.error('Gemini error details:', err);
+      return res.status(response.status).json({ error: 'API error', detail: err });
     }
 
     const data = await response.json();
     const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    
     if (!reply) return res.status(500).json({ error: 'Empty response from Gemini' });
 
     res.status(200).json({ reply });
-  } catch (error) {
+
+} catch (error) {
     console.error('Server error:', error);
     res.status(500).json({ error: 'Server error' });
-  }
+}
 }
