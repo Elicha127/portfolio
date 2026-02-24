@@ -58,18 +58,24 @@ INTÉRÊTS: Lecture, Prédication, Jeu d'échecs, Communication, Art oratoire, V
 RÉFÉRENCE: M. WADJA — 90 35 65 22 — IAI-TOGO
 DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/cybersécurité/automatisation`;
 
- try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    
-    // Correction de l'URL avec le modèle 1.5-flash
-   // 1. Utilisez impérativement v1beta pour avoir accès aux instructions système
-   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+ const apiKey = process.env.GEMINI_API_KEY;
+
+// 1. On vérifie la clé tout de suite
+if (!apiKey) {
+  console.error("ERREUR : La variable GEMINI_API_KEY est introuvable dans l'environnement Vercel");
+  return res.status(500).json({ error: 'API Key missing' });
+} else {
+  console.log("Clé détectée, début de chaîne :", apiKey.substring(0, 5));
+}
+
+try {
+    // 2. L'URL propre avec le bon modèle qui ne bloque pas (1.5-flash)
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        // 2. Utilisez system_instruction (SNAKE_CASE) pour le format REST
         system_instruction: {
           parts: [{ text: PROFILE_CONTEXT }]
         },
@@ -83,13 +89,15 @@ DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/
       })
     });
 
+    // 3. Gestion des erreurs de Google (si quota ou autre)
     if (!response.ok) {
-     // Remplace 2.0 par 1.5 dans ton URL
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      // VOICI LA LIGNE QUI MANQUAIT : On extrait l'erreur de la réponse de Google
+      const err = await response.json(); 
       console.error('Gemini error details:', err);
       return res.status(response.status).json({ error: 'API error', detail: err });
     }
 
+    // 4. Succès ! On extrait le texte
     const data = await response.json();
     const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
     
@@ -98,15 +106,8 @@ DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/
     res.status(200).json({ reply });
 
 } catch (error) {
+    // 5. Gestion des erreurs de votre serveur (ex: coupure réseau)
     console.error('Server error:', error);
     res.status(500).json({ error: 'Server error' });
-}
-
-const apiKey = process.env.GEMINI_API_KEY;
-
-if (!apiKey) {
-  console.error("ERREUR : La variable GEMINI_API_KEY est introuvable dans l'environnement Vercel");
-} else {
-  console.log("Clé détectée, début de chaîne :", apiKey.substring(0, 5));
 }
 }
