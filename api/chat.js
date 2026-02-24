@@ -100,4 +100,12 @@ DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/
     console.error('Server error:', error);
     res.status(500).json({ error: 'Server error' });
 }
+
+const apiKey = process.env.GEMINI_API_KEY;
+
+if (!apiKey) {
+  console.error("ERREUR : La variable GEMINI_API_KEY est introuvable dans l'environnement Vercel");
+} else {
+  console.log("Clé détectée, début de chaîne :", apiKey.substring(0, 5));
+}
 }
