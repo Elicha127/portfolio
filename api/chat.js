@@ -68,7 +68,8 @@ DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        system_instruction: {
+        // Changement ici : systemInstruction au lieu de system_instruction
+        systemInstruction: {
           parts: [{ text: PROFILE_CONTEXT }]
         },
         contents: [{
