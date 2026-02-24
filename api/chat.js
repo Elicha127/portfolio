@@ -9,9 +9,13 @@ export default async function handler(req, res) {
   const { message } = req.body;
   if (!message) return res.status(400).json({ error: 'Missing message' });
 
-  const PROFILE_CONTEXT = `Tu es l'assistant IA personnel de Yaovi Elicha AGBODOH, administrateur systèmes et réseaux basé à Lomé, Togo. Réponds UNIQUEMENT en rapport avec son profil. Sois précis, chaleureux et professionnel. Réponds en français sauf si la question est en anglais.
+  const PROFILE_CONTEXT = `Tu es l'assistant IA personnel de Yaovi Elicha AGBODOH, administrateur systèmes et réseaux basé à Lomé, Togo. Réponds UNIQUEMENT en rapport avec son profil. Sois précis, chaleureux et professionnel. Réponds en français sauf si la question est posée en anglais. Si on te demande qui tu es, dis que tu es l'assistant IA du portfolio d'Elicha.
 
-PROFIL: Yaovi Elicha AGBODOH | elichaagbodoh@gmail.com | +228 91 908 762 | Rue-37-Lapampa, Lomé, Togo
+PROFIL: Yaovi Elicha AGBODOH
+- Email: elichaagbodoh@gmail.com
+- Téléphone: +228 91 908 762
+- Adresse: Rue-37-Lapampa, Lomé, Togo
+- Poste: Administrateur Systèmes et Réseaux
 
 FORMATION:
 - Licence ASR — IAI-TOGO (nov. 2022 – déc. 2025): réseaux, sécurité, programmation, BDD
@@ -20,45 +24,72 @@ FORMATION:
 - Antennes Paraboliques — CEADPG (2016)
 
 EXPÉRIENCES:
-- Germe-tech (sept. 2025 – sept. 2026): Infrastructure ZeroTrust IaC — Ubuntu, Ansible, Prometheus, Grafana, Loki, pfSense, Nextcloud, Asterisk, Postfix, Dovecot
+- Germe-tech (sept. 2025 – sept. 2026): Infrastructure ZeroTrust IaC — Ubuntu, Ansible, Prometheus, Grafana, Loki, AlertManager, pfSense, Nextcloud, Asterisk, Postfix, Dovecot, Windows Server
 - New Brain Factory (juin–août 2025): Serveur Mail — Windows Server, Active Directory, hMailServer
-- DigIT Corporation (juil.–sept. 2024): Plateforme santé pour expos
+- DigIT Corporation (juil.–sept. 2024): Plateforme enregistrement santé pour expos
 
-PROJETS: Infrastructure virtualisée, conteneurisation, AD+GPO, audit sécurité Wireshark/Nmap/Nessus, appli Java stocks, site web IAI-TOGO
+PROJETS ACADÉMIQUES:
+- Infrastructure réseau virtualisée
+- Solution de conteneurisation Docker
+- Active Directory complet avec GPO
+- Audit de sécurité: Wireshark, Nmap, Nessus
+- Automatisation tâches d'administration système
+- Application Java de gestion des stocks
+- Site web gestion candidatures IAI-TOGO
 
-CERTIFICATIONS: Cisco CCNA 1 (2023), CCNA 2 (2024), CCNA 3 (2025), Cybersécurité (2026 en cours)
+CERTIFICATIONS:
+- Cisco CCNA 1 (2023): Introduction aux réseaux
+- Cisco CCNA 2 (2024): Routage et commutation
+- Cisco CCNA 3 (2025): Enterprise Networking, Security, and Automation — badge vérifié sur Credly
+- Cisco Cybersécurité (2026, en cours): Principes de cybersécurité
 
-COMPÉTENCES: Réseaux, Linux, Windows Server, Ansible/IaC, Prometheus/Grafana, Docker, SQL/MySQL, MongoDB, Neo4j, Python, Java, HTML/CSS, pfSense, Wireshark, Nmap, Nessus
+COMPÉTENCES (niveau avancé):
+- Réseaux: pfSense, VPN, ZeroTrust, Wireshark, Nmap, Nessus
+- Systèmes: Linux/Ubuntu Server, Windows Server, Active Directory, GPO
+- Automatisation/DevOps: Ansible, IaC, scripting Bash/Python
+- Monitoring: Prometheus, Grafana, Loki, AlertManager
+- Services: Postfix, Dovecot, Asterisk, Nextcloud, hMailServer
+- Conteneurisation: Docker
+- BDD: SQL/MySQL, MongoDB, Neo4j
+- Programmation: Python, Java, HTML/CSS
 
 LANGUES: Français (expert), Anglais (intermédiaire)
-INTÉRÊTS: Lecture, Prédication, Échecs, Communication, Art oratoire, Voyage
+INTÉRÊTS: Lecture, Prédication, Jeu d'échecs, Communication, Art oratoire, Voyage
 RÉFÉRENCE: M. WADJA — 90 35 65 22 — IAI-TOGO
-DISPONIBILITÉ: Ouvert stage, CDI/CDD, freelance, projets réseaux/systèmes/cybersécurité`;
+DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/cybersécurité/automatisation`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const apiKey = process.env.GEMINI_API_KEY;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 600,
-        system: PROFILE_CONTEXT,
-        messages: [{ role: 'user', content: message }]
+        system_instruction: {
+          parts: [{ text: PROFILE_CONTEXT }]
+        },
+        contents: [{
+          parts: [{ text: message }]
+        }],
+        generationConfig: {
+          maxOutputTokens: 600,
+          temperature: 0.7
+        }
       })
     });
 
     if (!response.ok) {
       const err = await response.text();
-      console.error('Anthropic error:', err);
-      return res.status(500).json({ error: 'API error' });
+      console.error('Gemini error:', err);
+      return res.status(500).json({ error: 'API error', detail: err });
     }
 
     const data = await response.json();
-    res.status(200).json({ reply: data.content[0].text });
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!reply) return res.status(500).json({ error: 'Empty response from Gemini' });
+
+    res.status(200).json({ reply });
   } catch (error) {
     console.error('Server error:', error);
     res.status(500).json({ error: 'Server error' });
