@@ -1,20 +1,18 @@
 const https = require('https');
 
 module.exports = async function handler(req, res) {
-    // 1. Headers CORS
+    // 1. Configuration CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Seul le POST est autorisé' });
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Méthode non autorisée' });
 
     const { message } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
 
-    if (!apiKey) return res.status(500).json({ error: "Clé API manquante dans Vercel" });
-
-    // 2. Contexte (Version allégée pour éviter les erreurs de caractères spéciaux)
+    // 2. Contexte du Portfolio (Allégé pour la stabilité)
     const PROFILE_CONTEXT = `Tu es l'assistant IA personnel de Yaovi Elicha AGBODOH, administrateur systèmes et réseaux basé à Lomé, Togo. Réponds UNIQUEMENT en rapport avec son profil. Sois précis, chaleureux et professionnel. Réponds en français sauf si la question est posée en anglais. Si on te demande qui tu es, dis que tu es l'assistant IA du portfolio d'Elicha.
 
 PROFIL: Yaovi Elicha AGBODOH
@@ -62,14 +60,15 @@ COMPÉTENCES (niveau avancé):
 LANGUES: Français (expert), Anglais (intermédiaire)
 INTÉRÊTS: Lecture, Prédication, Jeu d'échecs, Communication, Art oratoire, Voyage
 RÉFÉRENCE: M. WADJA — 90 35 65 22 — IAI-TOGO
-DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/cybersécurité/automatisation";`
+DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/cybersécurité/automatisation`;
 
     const postData = JSON.stringify({
         contents: [{
-            parts: [{ text: `CONTEXTE:\n${PROFILE_CONTEXT}\n\nQUESTION:\n${message}` }]
+            parts: [{ text: `CONTEXTE:\n${PROFILE_CONTEXT}\n\nUSER:\n${message}` }]
         }]
     });
 
+    // 3. URL v1beta (Celle qui a fonctionné à 07:03 dans tes logs)
     const options = {
         hostname: 'generativelanguage.googleapis.com',
         path: `/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
@@ -80,7 +79,6 @@ DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/
         }
     };
 
-    // 3. La Requête
     const request = https.request(options, (response) => {
         let body = '';
         response.on('data', (chunk) => body += chunk);
@@ -88,13 +86,13 @@ DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/
             try {
                 const json = JSON.parse(body);
                 if (response.statusCode === 200) {
-                    const reply = json.candidates?.[0]?.content?.parts?.[0]?.text || "L'IA n'a pas renvoyé de texte.";
+                    const reply = json.candidates?.[0]?.content?.parts?.[0]?.text || "Aucune réponse générée.";
                     res.status(200).json({ reply });
                 } else {
-                    res.status(response.statusCode).json({ error: "Erreur Google API", details: json });
+                    res.status(response.statusCode).json({ error: "Erreur Google API", detail: json });
                 }
             } catch (e) {
-                res.status(500).json({ error: "Erreur de lecture du JSON" });
+                res.status(500).json({ error: "Erreur parsing JSON" });
             }
         });
     });
