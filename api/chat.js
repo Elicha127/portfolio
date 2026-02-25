@@ -4,11 +4,9 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
+  
   const { message } = req.body;
   const apiKey = process.env.GEMINI_API_KEY;
-
   const PROFILE_CONTEXT = `Tu es l'assistant IA personnel de Yaovi Elicha AGBODOH, administrateur systèmes et réseaux basé à Lomé, Togo. Réponds UNIQUEMENT en rapport avec son profil. Sois précis, chaleureux et professionnel. Réponds en français sauf si la question est posée en anglais. Si on te demande qui tu es, dis que tu es l'assistant IA du portfolio d'Elicha.
 
 PROFIL: Yaovi Elicha AGBODOH
@@ -59,8 +57,8 @@ RÉFÉRENCE: M. WADJA — 90 35 65 22 — IAI-TOGO
 DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/cybersécurité/automatisation`;
 
   try {
-    // Changement : version v1 + nom de modèle complet
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // On utilise directement l'URL qui a fini par répondre (v1beta)
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: 'POST',
@@ -74,15 +72,13 @@ DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/
 
     const data = await response.json();
 
-    if (!response.ok) {
-      // Si ça échoue encore en 404, on tente un dernier fallback automatique vers v1beta
-      console.error('Tentative v1 échouée, essai v1beta...');
-      const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-      // ... (code de secours simplifié)
+    if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      const reply = data.candidates[0].content.parts[0].text;
+      return res.status(200).json({ reply });
     }
 
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    res.status(200).json({ reply: reply || "Désolé, je n'ai pas pu générer de réponse." });
+    // Si ça échoue encore, on renvoie une erreur propre
+    res.status(500).json({ error: "L'IA est momentanément indisponible." });
 
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
