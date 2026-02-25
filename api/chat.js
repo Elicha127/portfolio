@@ -70,8 +70,8 @@ if (!apiKey) {
 
 try {
     // 2. L'URL propre avec le bon modèle qui ne bloque pas (1.5-flash)
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
+   // FORCE l'utilisation du 1.5-flash ici
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
