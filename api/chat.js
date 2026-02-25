@@ -1,13 +1,20 @@
-module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+const https = require('https');
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  
-  const { message } = req.body;
-  const apiKey = process.env.GEMINI_API_KEY;
-  const PROFILE_CONTEXT = `Tu es l'assistant IA personnel de Yaovi Elicha AGBODOH, administrateur systèmes et réseaux basé à Lomé, Togo. Réponds UNIQUEMENT en rapport avec son profil. Sois précis, chaleureux et professionnel. Réponds en français sauf si la question est posée en anglais. Si on te demande qui tu es, dis que tu es l'assistant IA du portfolio d'Elicha.
+module.exports = async function handler(req, res) {
+    // 1. Headers CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+    const { message } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) return res.status(500).json({ error: "Clé API manquante" });
+
+    const PROFILE_CONTEXT = `Tu es l'assistant IA personnel de Yaovi Elicha AGBODOH, administrateur systèmes et réseaux basé à Lomé, Togo. Réponds UNIQUEMENT en rapport avec son profil. Sois précis, chaleureux et professionnel. Réponds en français sauf si la question est posée en anglais. Si on te demande qui tu es, dis que tu es l'assistant IA du portfolio d'Elicha.
 
 PROFIL: Yaovi Elicha AGBODOH
 - Email: elichaagbodoh@gmail.com
@@ -54,33 +61,48 @@ COMPÉTENCES (niveau avancé):
 LANGUES: Français (expert), Anglais (intermédiaire)
 INTÉRÊTS: Lecture, Prédication, Jeu d'échecs, Communication, Art oratoire, Voyage
 RÉFÉRENCE: M. WADJA — 90 35 65 22 — IAI-TOGO
-DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/cybersécurité/automatisation`;
+DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/cybersécurité/automatisation;
 
-  try {
-    // On utilise directement l'URL qui a fini par répondre (v1beta)
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    // Préparation des données pour Google
+    const data = JSON.stringify({
         contents: [{
-          parts: [{ text: `CONTEXTE:\n${PROFILE_CONTEXT}\n\nUSER:\n${message}` }]
+            parts: [{ text: `CONTEXTE:\n${PROFILE_CONTEXT}\n\nUSER:\n${message}` }]
         }]
-      })
     });
 
-    const data = await response.json();
+    // 2. Utilisation de HTTPS (plus stable que fetch sur les vieilles versions Node)
+    const options = {
+        hostname: 'generativelanguage.googleapis.com',
+        path: `/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': data.length
+        }
+    };
 
-    if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
-      const reply = data.candidates[0].content.parts[0].text;
-      return res.status(200).json({ reply });
-    }
+    const request = https.request(options, (response) => {
+        let body = '';
+        response.on('data', (chunk) => body += chunk);
+        response.on('end', () => {
+            try {
+                const json = JSON.parse(body);
+                if (response.statusCode === 200) {
+                    const reply = json.candidates?.[0]?.content?.parts?.[0]?.text;
+                    res.status(200).json({ reply: reply || "Pas de réponse" });
+                } else {
+                    res.status(response.statusCode).json({ error: "Erreur Google", detail: json });
+                }
+            } catch (e) {
+                res.status(500).json({ error: "Erreur parsing JSON" });
+            }
+        });
+    });
 
-    // Si ça échoue encore, on renvoie une erreur propre
-    res.status(500).json({ error: "L'IA est momentanément indisponible." });
+    request.on('error', (error) => {
+        res.status(500).json({ error: "Erreur réseau", details: error.message });
+    });
 
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
+    request.write(data);
+    request.end();
 };
