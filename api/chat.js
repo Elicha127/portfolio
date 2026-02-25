@@ -58,7 +58,8 @@ INTÉRÊTS: Lecture, Prédication, Jeu d'échecs, Communication, Art oratoire, V
 RÉFÉRENCE: M. WADJA — 90 35 65 22 — IAI-TOGO
 DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/cybersécurité/automatisation`;
 
- const apiKey = process.env.GEMINI_API_KEY;
+console.log("Version du script: 1.5-STABLE-TEST"); // Ajoute ça juste avant le try
+const apiKey = process.env.GEMINI_API_KEY;
 
 // 1. On vérifie la clé tout de suite
 if (!apiKey) {
