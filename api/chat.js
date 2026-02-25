@@ -70,35 +70,33 @@ if (!apiKey) {
 }
 
 try {
-    // 2. L'URL propre avec le bon modèle qui ne bloque pas (1.5-flash)
-   // FORCE l'utilisation du 1.5-flash ici
+    console.log("Version du script: 1.5-STABLE-PROMPT-FIX");
+    
     const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: PROFILE_CONTEXT }]
-        },
         contents: [{
-          parts: [{ text: message }]
+          parts: [{ 
+            // On met les instructions directement ici pour la version v1 stable
+            text: `INSTRUCTIONS SYSTEME:\n${PROFILE_CONTEXT}\n\nQUESTION DE L'UTILISATEUR:\n${message}` 
+          }]
         }],
         generationConfig: {
-          maxOutputTokens: 600,
+          maxOutputTokens: 800,
           temperature: 0.7
         }
       })
     });
 
-    // 3. Gestion des erreurs de Google (si quota ou autre)
     if (!response.ok) {
-      // VOICI LA LIGNE QUI MANQUAIT : On extrait l'erreur de la réponse de Google
       const err = await response.json(); 
       console.error('Gemini error details:', err);
       return res.status(response.status).json({ error: 'API error', detail: err });
     }
 
-    // 4. Succès ! On extrait le texte
     const data = await response.json();
     const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
     
@@ -107,8 +105,6 @@ try {
     res.status(200).json({ reply });
 
 } catch (error) {
-    // 5. Gestion des erreurs de votre serveur (ex: coupure réseau)
     console.error('Server error:', error);
     res.status(500).json({ error: 'Server error' });
-}
 }
