@@ -12,7 +12,9 @@ module.exports = async function handler(req, res) {
     const { message } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
 
-    // 2. Contexte du Portfolio (Allégé pour la stabilité)
+    if (!apiKey) return res.status(500).json({ error: "Clé API absente" });
+
+    // 2. Contexte du Portfolio
     const PROFILE_CONTEXT = `Tu es l'assistant IA personnel de Yaovi Elicha AGBODOH, administrateur systèmes et réseaux basé à Lomé, Togo. Réponds UNIQUEMENT en rapport avec son profil. Sois précis, chaleureux et professionnel. Réponds en français sauf si la question est posée en anglais. Si on te demande qui tu es, dis que tu es l'assistant IA du portfolio d'Elicha.
 
 PROFIL: Yaovi Elicha AGBODOH
@@ -62,16 +64,19 @@ INTÉRÊTS: Lecture, Prédication, Jeu d'échecs, Communication, Art oratoire, V
 RÉFÉRENCE: M. WADJA — 90 35 65 22 — IAI-TOGO
 DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/cybersécurité/automatisation`;
 
+    // LA CORRECTION EST ICI : On utilise de simples guillemets et des "+" 
+    const promptText = "CONTEXTE:\n" + PROFILE_CONTEXT + "\n\nUSER:\n" + message;
+
     const postData = JSON.stringify({
         contents: [{
-            parts: [{ text: `CONTEXTE:\n${PROFILE_CONTEXT}\n\nUSER:\n${message}` }]
+            parts: [{ text: promptText }]
         }]
     });
 
-    // 3. URL v1beta (Celle qui a fonctionné à 07:03 dans tes logs)
+    // 3. Configuration de la requête
     const options = {
         hostname: 'generativelanguage.googleapis.com',
-        path: `/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        path: '/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey,
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -79,15 +84,19 @@ DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/
         }
     };
 
+    // 4. Exécution
     const request = https.request(options, (response) => {
         let body = '';
-        response.on('data', (chunk) => body += chunk);
+        response.on('data', (chunk) => { body += chunk; });
         response.on('end', () => {
             try {
                 const json = JSON.parse(body);
                 if (response.statusCode === 200) {
-                    const reply = json.candidates?.[0]?.content?.parts?.[0]?.text || "Aucune réponse générée.";
-                    res.status(200).json({ reply });
+                    let reply = "Aucune réponse générée.";
+                    if (json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts[0]) {
+                        reply = json.candidates[0].content.parts[0].text;
+                    }
+                    res.status(200).json({ reply: reply });
                 } else {
                     res.status(response.statusCode).json({ error: "Erreur Google API", detail: json });
                 }
