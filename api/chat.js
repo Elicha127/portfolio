@@ -1,5 +1,5 @@
 module.exports = async function handler(req, res) {
-  // 1. Headers CORS
+  // 1. Headers CORS pour autoriser ton site
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -10,6 +10,7 @@ module.exports = async function handler(req, res) {
   const { message } = req.body;
   if (!message) return res.status(400).json({ error: 'Missing message' });
 
+  // 2. Ton contexte professionnel
   const PROFILE_CONTEXT = `Tu es l'assistant IA personnel de Yaovi Elicha AGBODOH, administrateur systèmes et réseaux basé à Lomé, Togo. Réponds UNIQUEMENT en rapport avec son profil. Sois précis, chaleureux et professionnel. Réponds en français sauf si la question est posée en anglais. Si on te demande qui tu es, dis que tu es l'assistant IA du portfolio d'Elicha.
 
 PROFIL: Yaovi Elicha AGBODOH
@@ -62,13 +63,14 @@ DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    return res.status(500).json({ error: 'API Key missing' });
+    return res.status(500).json({ error: 'API Key missing in environment' });
   }
 
   try {
+    // Log pour confirmer le nouveau build dans tes logs Vercel
     console.log("Version du script: 1.5-COMMONJS-STABLE");
     
-    // URL Stable v1 pour éviter les erreurs 404/400
+    // Utilisation de l'URL stable v1
     const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
@@ -77,7 +79,7 @@ DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/
       body: JSON.stringify({
         contents: [{
           parts: [{ 
-            text: `INSTRUCTIONS SYSTEME:\n${PROFILE_CONTEXT}\n\nQUESTION:\n${message}` 
+            text: `INSTRUCTIONS:\n${PROFILE_CONTEXT}\n\nQUESTION:\n${message}` 
           }]
         }],
         generationConfig: {
@@ -89,13 +91,14 @@ DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/
 
     if (!response.ok) {
       const errorData = await response.json();
+      console.error('Gemini API Error:', errorData);
       return res.status(response.status).json({ error: 'API error', detail: errorData });
     }
 
     const data = await response.json();
     const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
     
-    if (!reply) return res.status(500).json({ error: 'Empty response' });
+    if (!reply) return res.status(500).json({ error: 'Empty response from AI' });
 
     res.status(200).json({ reply });
 
