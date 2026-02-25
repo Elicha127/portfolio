@@ -1,4 +1,5 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
+  // 1. Headers CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -58,20 +59,16 @@ INTÉRÊTS: Lecture, Prédication, Jeu d'échecs, Communication, Art oratoire, V
 RÉFÉRENCE: M. WADJA — 90 35 65 22 — IAI-TOGO
 DISPONIBILITÉ: Ouvert à stage, CDI/CDD, freelance, projets réseaux/systèmes/cybersécurité/automatisation`;
 
-console.log("Version du script: 1.5-STABLE-TEST"); // Ajoute ça juste avant le try
-const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
 
-// 1. On vérifie la clé tout de suite
-if (!apiKey) {
-  console.error("ERREUR : La variable GEMINI_API_KEY est introuvable dans l'environnement Vercel");
-  return res.status(500).json({ error: 'API Key missing' });
-} else {
-  console.log("Clé détectée, début de chaîne :", apiKey.substring(0, 5));
-}
+  if (!apiKey) {
+    return res.status(500).json({ error: 'API Key missing' });
+  }
 
-try {
-    console.log("Version du script: 1.5-STABLE-PROMPT-FIX");
+  try {
+    console.log("Version du script: 1.5-COMMONJS-STABLE");
     
+    // URL Stable v1 pour éviter les erreurs 404/400
     const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
@@ -80,8 +77,7 @@ try {
       body: JSON.stringify({
         contents: [{
           parts: [{ 
-            // On met les instructions directement ici pour la version v1 stable
-            text: `INSTRUCTIONS SYSTEME:\n${PROFILE_CONTEXT}\n\nQUESTION DE L'UTILISATEUR:\n${message}` 
+            text: `INSTRUCTIONS SYSTEME:\n${PROFILE_CONTEXT}\n\nQUESTION:\n${message}` 
           }]
         }],
         generationConfig: {
@@ -92,19 +88,19 @@ try {
     });
 
     if (!response.ok) {
-      const err = await response.json(); 
-      console.error('Gemini error details:', err);
-      return res.status(response.status).json({ error: 'API error', detail: err });
+      const errorData = await response.json();
+      return res.status(response.status).json({ error: 'API error', detail: errorData });
     }
 
     const data = await response.json();
     const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
     
-    if (!reply) return res.status(500).json({ error: 'Empty response from Gemini' });
+    if (!reply) return res.status(500).json({ error: 'Empty response' });
 
     res.status(200).json({ reply });
 
-} catch (error) {
+  } catch (error) {
     console.error('Server error:', error);
     res.status(500).json({ error: 'Server error' });
-}
+  }
+};
